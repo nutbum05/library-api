@@ -1,81 +1,66 @@
 const User = require('../src/models/user');
-const mongoose = require('mongoose');
-const chai = require('chai');
 const DataFactory = require('./helpers/data-factory');
+const UserHelpers = require('./helpers/users-helpers');
 
 
-describe('/users', () => {
-  afterEach((done) => {
+describe('/user', () => {
+  beforeEach((done) => {
     User.deleteMany({}, () => {
       done();
     });
   });
-
-
-  it('creates a user in the database', (done) => {
-    chai.request(server)
-      .post('/users')
-      .send({
-        firstName: 'Luk',
-        lastName: 'Nut',
-        email: 'luk@gmail.com',
-        password: 'password',
-      })
-      .end((error, res) => {
-        expect(error).to.equal(null);
-        expect(res.status).to.equal(201);
-
-        User.findById(res.body._id, (err, user) => {
-          expect(err).to.equal(null);
-          expect(res.body).not.to.have.property('password');
-          expect(user.firstName).to.equal('Luk');
-          expect(user.lastName).to.equal('Nut');
-          expect(user.email).to.equal('luk@gmail.com');
-          expect(user.password).to.not.equal('password');
-          expect(user.password).to.have.length(60);
-          done();
-        });
-      });
+  beforeEach((done) => {
+    const user = DataFactory.user();
+    UserHelpers.signUp(user)
+      .then(() => done())
+      .catch((error) => done(error));
   });
 
+  describe('user', () => {
+    describe('POST /user', () => {
+      it('creates a user in the database', (done) => {
+        const data = DataFactory.user();
+        UserHelpers.signUp(data)
+          .then(res => {
+            expect(res.status).to.equal(201);
+            expect(res.body).not.to.have.property('password');
 
-  it('checks if email is valid', (done) => {
-    chai.request(server)
-      .post('/users')
-      .send({
-        firstName: 'Luk',
-        lastName: 'Nut',
-        email: 'qwe',
-        password: 'password',
-      })
-      .end((error, res) => {
-        expect(error).to.equal(null);
-        expect(res.status).to.equal(400);
-        expect(res.body.errors.email).to.equal('Email address is not valid.');
-        User.countDocuments((error, count) => {
-          expect(count).to.equal(0);
-          done();
-        });
+            User.findById(res.body._id, (err, user) => {
+              expect(err).to.equal(null);
+              expect(user.firstName).to.equal(data.firstName);
+              expect(user.lastName).to.equal(data.lastName);
+              expect(user.email).to.equal(data.email);
+              done();
+            });
+          })
+          .catch(error => done(error));
       });
-  });
-
-  it('checks if password is valid', (done) => {
-    chai.request(server)
-      .post('/users')
-      .send({
-        firstName: 'Luk',
-        lastName: 'Nut',
-        email: 'luk@gmail.com',
-        password: '12',
-      })
-      .end((error, res) => {
-        expect(error).to.equal(null);
-        expect(res.status).to.equal(400);
-        expect(res.body.errors.password).to.equal('Passwords must be 8 characters long.');
-        User.countDocuments((error, count) => {
-          expect(count).to.equal(0);
-          done();
-        });
+      it('checks if email is valid', (done) => {
+        const data = DataFactory.user({ email: 'mail' });
+        UserHelpers.signUp(data)
+          .then(res => {
+            expect(res.status).to.equal(422);
+            expect(res.body.errors.email).to.equal('Email address is not valid.');
+            User.countDocuments((err, count) => {
+              expect(count).to.equal(1);
+              done();
+            })
+              .catch(error => done(error));
+          });
       });
+      it('checks if password is valid', (done) => {
+        const data = DataFactory.user({ password: '12234' });
+        UserHelpers.signUp(data)
+          .then(res => {
+            expect(res.status).to.equal(422);
+            expect(res.body.errors.password).to.equal('Passwords must be 8 characters long.');
+            User.countDocuments((err, count) => {
+              expect(count).to.equal(1);
+              done();
+            })
+              .catch(error => done(error));
+          });
+      });
+    });
   });
 });

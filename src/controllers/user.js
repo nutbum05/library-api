@@ -15,7 +15,7 @@ exports.create = (req, res) => {
       if (error.name === 'ValidationError') {
         const emailError = error.errors.email ? error.errors.email.message : null;
         const passwordError = error.errors.password ? error.errors.password.message : null;
-        res.status(400).json({
+        res.status(422).json({
           errors: {
             email: emailError,
             password: passwordError,

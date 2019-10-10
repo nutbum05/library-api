@@ -9,7 +9,7 @@ app.get('/', (req, res) => {
   res.status(200).json({ message: 'Hello World!' });
 });
 
-app.post('/users', User.create);
+app.post('/user', User.create);
 
 
 module.exports = app;

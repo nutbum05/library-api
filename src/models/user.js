@@ -34,6 +34,10 @@ userSchema.methods.sanitise = function () {
   return rest;
 };
 
+userSchema.methods.validatePassword = function validatePassword(guess) {
+  return bcrypt.compareSync(guess, this.password);
+};
+
 const User = mongoose.model('User', userSchema);
 
 module.exports = User;
